@@ -3,5 +3,18 @@
 Thumbs.db
 *~
 .idea/
+
+# VS Code workspace — ignore everything but the shared dev configs we commit
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Build output, dependencies, and packaged extensions
+node_modules/
+out/
+*.vsix
+.vscode-test/
+
+# Local agent/session state
+.claude/

@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+.claude/**
+.github/**
+src/**
+scripts/**
+node_modules/**
+.gitignore
+.git/**
+CLAUDE.md
+REUSE.toml
+LICENSES/**
+**/tsconfig.json
+**/*.map
+**/*.ts

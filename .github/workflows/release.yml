@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build .vsix and publish to Releases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run the verification gate
+        run: npm test
+
+      - name: Package the extension
+        run: npx --yes @vscode/vsce package --out "ignore-and-exclude-${{ github.ref_name }}.vsix"
+
+      - name: Publish GitHub Release with the .vsix attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            "ignore-and-exclude-${{ github.ref_name }}.vsix" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

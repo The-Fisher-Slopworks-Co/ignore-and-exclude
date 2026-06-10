@@ -3,57 +3,79 @@ SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# Slopworks project template
+# Ignore & Exclude
 
-The starting point for new [The Fisher Slopworks Co](https://github.com/The-Fisher-Slopworks-Co)
-repositories. It ships the **licensing baseline** every project must carry
-physically (licensing can't be inherited), already wired up and passing checks:
+A tiny VS Code extension that adds two entries to a file's right-click menu:
 
-- **License — AGPL-3.0-or-later.** Root [`LICENSE`](LICENSE) plus the canonical
-  SPDX text in [`LICENSES/`](LICENSES/).
-- **[REUSE](https://reuse.software/) compliance.** A [`REUSE.toml`](REUSE.toml)
-  that declares the whole tree as `AGPL-3.0-or-later` © *The Fisher Slopworks Co*,
-  and a [`reuse.yml`](.github/workflows/reuse.yml) workflow that enforces `reuse lint`
-  on every push and pull request.
+- **Add to `.gitignore`** — ignore the file for everyone (the entry is committed).
+- **Add to `.git/info/exclude`** — ignore the file for **you only**, without
+  touching a tracked file (nothing to commit).
 
-Governance docs — the **Code of Conduct, security policy, and contributing
-guide** — are deliberately **not** shipped here. They are inherited org-wide from
-[`The-Fisher-Slopworks-Co/.github`](https://github.com/The-Fisher-Slopworks-Co/.github),
-so every repository gets them automatically without a per-repo copy.
+## Why both?
 
-## Using it
+`.gitignore` is shared with your team through version control. `.git/info/exclude`
+is local to your clone — perfect for personal scratch files, editor junk, or
+local config you don't want to push and don't want to force on anyone else.
+This extension makes either one a single click away.
 
-1. Click **“Use this template” → “Create a new repository”** on GitHub (or
-   `gh repo create <name> --template The-Fisher-Slopworks-Co/template`).
-2. Clone your new repository and run the initializer once:
+## Usage
 
-   ```bash
-   ./scripts/init.sh
-   ```
+Right-click a file in the **Explorer** (or on an editor tab) and choose:
 
-   It asks for the project name and tagline, writes a fresh project `README.md`,
-   deletes itself, and runs `reuse lint` to confirm the repository is still
-   compliant. (You can also run it non-interactively:
-   `./scripts/init.sh "My Project" "A short tagline."`)
+- **Add to .gitignore**, or
+- **Add to .git/info/exclude**
 
-## Keeping a project compliant
+The same commands are available from the Command Palette (they act on the
+active editor's file). You can select several files and add them all at once.
 
-Every file needs copyright + license information. Source files and YAML carry an
-inline two-line SPDX header:
+### What gets written
 
-```text
-SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
-SPDX-License-Identifier: AGPL-3.0-or-later
+Each file is written as a **root-anchored, exactly-matching** pattern, so only
+that file is ignored — never same-named files elsewhere in the tree:
+
+```gitignore
+/secret.txt
+/build/artifact.bin
+/logs/today\[1\].txt   # glob metacharacters in the name are escaped
 ```
 
-Files that can't hold a comment (JSON, binaries, some docs) are covered by the
-`**` default in [`REUSE.toml`](REUSE.toml). Verify any time with:
+Adding a file that's already listed is a no-op — the extension won't create
+duplicate lines. Files outside the open workspace folder are reported with a
+clear error instead of writing somewhere unexpected. Repositories whose `.git`
+is a pointer file (submodules and linked worktrees) are resolved correctly, so
+the exclude entry lands in the real git directory.
+
+## Develop / run from source
 
 ```bash
-reuse lint
+npm install
+npm run compile
+# then press F5 in VS Code to launch an Extension Development Host
 ```
+
+Other scripts:
+
+```bash
+npm test            # compile + pattern unit tests + runtime smoke tests
+npm run watch       # recompile on change
+npm run check       # pure pattern/escaping unit tests (after compile)
+npm run smoke       # drive both commands against a mocked VS Code + temp repo
+npm run make:icon   # regenerate icon.png
+```
+
+You can also install the packaged build directly:
+
+```bash
+npx @vscode/vsce package           # produces ignore-and-exclude-0.1.0.vsix
+code --install-extension ignore-and-exclude-0.1.0.vsix
+```
+
+Tagged releases (`v*`) are built and published automatically by CI, which
+attaches the packaged `.vsix` to the corresponding
+[GitHub Release](https://github.com/The-Fisher-Slopworks-Co/ignore-and-exclude/releases).
 
 ## License
 
-This template is licensed under [AGPL-3.0-or-later](LICENSE) and is itself
-REUSE-compliant.
+AGPL-3.0-or-later. See [LICENSE](LICENSE).
+
+This project is [REUSE](https://reuse.software/)-compliant.

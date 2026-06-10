@@ -1,0 +1,101 @@
+{
+  "name": "ignore-and-exclude",
+  "displayName": "Ignore & Exclude",
+  "description": "Add files to .gitignore or .git/info/exclude straight from the Explorer context menu.",
+  "version": "0.1.0",
+  "publisher": "The-Fisher-Slopworks-Co",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/The-Fisher-Slopworks-Co/ignore-and-exclude.git"
+  },
+  "bugs": {
+    "url": "https://github.com/The-Fisher-Slopworks-Co/ignore-and-exclude/issues"
+  },
+  "homepage": "https://github.com/The-Fisher-Slopworks-Co/ignore-and-exclude#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "gitignore",
+    "git",
+    "exclude",
+    "ignore",
+    "scm",
+    "vcs"
+  ],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#22272e",
+    "theme": "dark"
+  },
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ignoreAndExclude.addToGitignore",
+        "title": "Add to .gitignore",
+        "category": "Ignore & Exclude"
+      },
+      {
+        "command": "ignoreAndExclude.addToGitExclude",
+        "title": "Add to .git/info/exclude",
+        "category": "Ignore & Exclude"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "ignoreAndExclude.addToGitignore",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "9_ignoreAndExclude@1"
+        },
+        {
+          "command": "ignoreAndExclude.addToGitExclude",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "9_ignoreAndExclude@2"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "ignoreAndExclude.addToGitignore",
+          "when": "resourceScheme == file",
+          "group": "9_ignoreAndExclude@1"
+        },
+        {
+          "command": "ignoreAndExclude.addToGitExclude",
+          "when": "resourceScheme == file",
+          "group": "9_ignoreAndExclude@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "ignoreAndExclude.addToGitignore",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "ignoreAndExclude.addToGitExclude",
+          "when": "editorIsOpen"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "make:icon": "node scripts/make-icon.mjs",
+    "check": "node scripts/check-pattern.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "test": "npm run compile && node scripts/check-pattern.mjs && node scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
