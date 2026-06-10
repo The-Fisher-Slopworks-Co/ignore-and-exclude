@@ -1,0 +1,10 @@
+version = 1
+
+# Every file is original work of the organization, licensed AGPL-3.0-or-later.
+# precedence = "closest" means a file's own inline SPDX header (when present) wins
+# over this wildcard, so source files can still carry their own headers.
+[[annotations]]
+path = "**"
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 The Fisher Slopworks Co"
+SPDX-License-Identifier = "AGPL-3.0-or-later"

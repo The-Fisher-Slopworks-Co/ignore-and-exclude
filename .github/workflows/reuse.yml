@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: REUSE Compliance
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  reuse:
+    name: REUSE lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Verify REUSE compliance
+        uses: fsfe/reuse-action@v6
