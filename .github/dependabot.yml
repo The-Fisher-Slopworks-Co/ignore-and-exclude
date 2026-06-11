@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Keep the GitHub Actions used by our CI / release / REUSE workflows current.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"
