@@ -71,8 +71,8 @@ npm run make:icon   # regenerate icon.png
 You can also install the packaged build directly:
 
 ```bash
-npx @vscode/vsce package           # produces ignore-and-exclude-0.1.0.vsix
-code --install-extension ignore-and-exclude-0.1.0.vsix
+npx @vscode/vsce package           # produces ignore-and-exclude-0.2.0.vsix
+code --install-extension ignore-and-exclude-0.2.0.vsix
 ```
 
 Tagged releases (`v*`) are built and published automatically by CI, which
