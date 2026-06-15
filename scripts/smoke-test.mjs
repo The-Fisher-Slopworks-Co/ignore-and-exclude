@@ -153,6 +153,34 @@ await test('adds a nested file to .git/info/exclude', async () => {
   assert.equal(exclude, '/build/artifact.bin\n');
 });
 
+// ---- add a directory: matched with a trailing slash -------------------------
+await test('adds a directory to .gitignore with a trailing-slash pattern', async () => {
+  const root = freshWorkspace();
+  const target = path.join(root, 'logs');
+  mkdirSync(target, { recursive: true });
+  const mock = buildMock(root);
+  loadExtension(mock);
+  await mock.calls.commands.get(ADD_GITIGNORE)(fileUri(target));
+
+  const gitignore = readFileSync(path.join(root, '.gitignore'), 'utf8');
+  assert.equal(gitignore, '/logs/\n');
+  assert.match(mock.calls.info[0], /Added logs to \.gitignore/);
+  assert.equal(mock.calls.error.length, 0);
+});
+
+// ---- add a nested directory to .git/info/exclude ----------------------------
+await test('adds a nested directory to .git/info/exclude with a trailing slash', async () => {
+  const root = freshWorkspace();
+  const target = path.join(root, 'src', 'generated');
+  mkdirSync(target, { recursive: true });
+  const mock = buildMock(root);
+  loadExtension(mock);
+  await mock.calls.commands.get(ADD_EXCLUDE)(fileUri(target));
+
+  const exclude = readFileSync(path.join(root, '.git', 'info', 'exclude'), 'utf8');
+  assert.equal(exclude, '/src/generated/\n');
+});
+
 // ---- de-duplication: adding the same file twice is idempotent ---------------
 await test('adding the same file twice does not duplicate the line', async () => {
   const root = freshWorkspace();
@@ -196,7 +224,7 @@ await test('multi-select adds every selected file and reports the count', async 
 
   const gitignore = readFileSync(path.join(root, '.gitignore'), 'utf8');
   assert.equal(gitignore, '/a.txt\n/nested/b.txt\n');
-  assert.ok(mock.calls.info.some((m) => /Added 2 files to \.gitignore/.test(m)));
+  assert.ok(mock.calls.info.some((m) => /Added 2 entries to \.gitignore/.test(m)));
 });
 
 // ---- glob metacharacters in the name are escaped ----------------------------

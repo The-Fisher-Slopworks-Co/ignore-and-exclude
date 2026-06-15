@@ -5,10 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Ignore & Exclude
 
-A tiny VS Code extension that adds two entries to a file's right-click menu:
+A tiny VS Code extension that adds two entries to the right-click menu of any
+file or folder:
 
-- **Add to `.gitignore`** — ignore the file for everyone (the entry is committed).
-- **Add to `.git/info/exclude`** — ignore the file for **you only**, without
+- **Add to `.gitignore`** — ignore it for everyone (the entry is committed).
+- **Add to `.git/info/exclude`** — ignore it for **you only**, without
   touching a tracked file (nothing to commit).
 
 ## Why both?
@@ -20,27 +21,31 @@ This extension makes either one a single click away.
 
 ## Usage
 
-Right-click a file in the **Explorer** (or on an editor tab) and choose:
+Right-click a file or folder in the **Explorer** (or a file on an editor tab)
+and choose:
 
 - **Add to .gitignore**, or
 - **Add to .git/info/exclude**
 
 The same commands are available from the Command Palette (they act on the
-active editor's file). You can select several files and add them all at once.
+active editor's file). You can select several items and add them all at once.
 
 ### What gets written
 
-Each file is written as a **root-anchored, exactly-matching** pattern, so only
-that file is ignored — never same-named files elsewhere in the tree:
+Each entry is written as a **root-anchored, exactly-matching** pattern, so only
+that file or folder is ignored — never same-named entries elsewhere in the tree.
+A folder gets a trailing slash, so it matches only the directory and never a
+same-named file beside it:
 
 ```gitignore
 /secret.txt
 /build/artifact.bin
+/logs/                 # a folder, matched with a trailing slash
 /logs/today\[1\].txt   # glob metacharacters in the name are escaped
 ```
 
-Adding a file that's already listed is a no-op — the extension won't create
-duplicate lines. Files outside the open workspace folder are reported with a
+Adding an entry that's already listed is a no-op — the extension won't create
+duplicate lines. Items outside the open workspace folder are reported with a
 clear error instead of writing somewhere unexpected. Repositories whose `.git`
 is a pointer file (submodules and linked worktrees) are resolved correctly, so
 the exclude entry lands in the real git directory.
