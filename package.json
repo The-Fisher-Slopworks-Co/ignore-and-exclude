@@ -51,12 +51,12 @@
       "explorer/context": [
         {
           "command": "ignoreAndExclude.addToGitignore",
-          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "when": "resourceScheme == file",
           "group": "9_ignoreAndExclude@1"
         },
         {
           "command": "ignoreAndExclude.addToGitExclude",
-          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "when": "resourceScheme == file",
           "group": "9_ignoreAndExclude@2"
         }
       ],

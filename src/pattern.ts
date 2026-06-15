@@ -31,18 +31,22 @@ function escapeTrailingSpaces(pattern: string): string {
 /**
  * Build an anchored gitignore pattern for a workspace-relative POSIX path.
  *
- *   "secret.txt"        -> "/secret.txt"
- *   "src/keys/api.pem"  -> "/src/keys/api.pem"
- *   "a[1].log"          -> "/a\\[1\\].log"
+ *   "secret.txt"           -> "/secret.txt"
+ *   "src/keys/api.pem"     -> "/src/keys/api.pem"
+ *   "a[1].log"             -> "/a\\[1\\].log"
+ *   "build" (isDirectory)  -> "/build/"
  *
  * The leading slash anchors the pattern to the directory of the ignore file
- * (the workspace root, where we write both files), so it matches that one file
- * and not same-named files in other folders.
+ * (the workspace root, where we write both files), so it matches that one entry
+ * and not same-named entries in other folders. A directory additionally gets a
+ * trailing slash so the pattern matches only the directory, never a same-named
+ * regular file beside it.
  */
-export function toIgnorePattern(posixRelativePath: string): string {
+export function toIgnorePattern(posixRelativePath: string, isDirectory = false): string {
   const segments = posixRelativePath.split('/').filter((s) => s.length > 0);
   const anchored = '/' + segments.map(escapeSegment).join('/');
-  return escapeTrailingSpaces(anchored);
+  const escaped = escapeTrailingSpaces(anchored);
+  return isDirectory ? escaped + '/' : escaped;
 }
 
 /**

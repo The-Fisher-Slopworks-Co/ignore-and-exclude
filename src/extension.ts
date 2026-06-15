@@ -34,53 +34,53 @@ export function deactivate(): void {
 }
 
 /**
- * Work out which file(s) the command targets. The Explorer passes
+ * Work out which resource(s) the command targets. The Explorer passes
  * `(clickedUri, selectedUris)`; an editor-title click passes a single uri; the
  * Command Palette passes nothing, so we fall back to the active editor.
  */
 function collectUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  const onlyFiles = (list: vscode.Uri[]): vscode.Uri[] =>
+  const onDisk = (list: vscode.Uri[]): vscode.Uri[] =>
     list.filter((u) => u && u.scheme === 'file');
 
   if (uris && uris.length > 0) {
-    return onlyFiles(uris);
+    return onDisk(uris);
   }
   if (uri) {
-    return onlyFiles([uri]);
+    return onDisk([uri]);
   }
   const active = vscode.window.activeTextEditor?.document.uri;
-  return active ? onlyFiles([active]) : [];
+  return active ? onDisk([active]) : [];
 }
 
 async function run(target: Target, uri?: vscode.Uri, uris?: vscode.Uri[]): Promise<void> {
   const label = TARGET_LABEL[target];
-  const files = collectUris(uri, uris);
-  if (files.length === 0) {
+  const resources = collectUris(uri, uris);
+  if (resources.length === 0) {
     vscode.window.showWarningMessage(
-      `Ignore & Exclude: open or select a file to add to ${label}.`,
+      `Ignore & Exclude: open or select a file or folder to add to ${label}.`,
     );
     return;
   }
 
   const results: EntryResult[] = [];
-  for (const file of files) {
-    const folder = vscode.workspace.getWorkspaceFolder(file);
+  for (const resource of resources) {
+    const folder = vscode.workspace.getWorkspaceFolder(resource);
     if (!folder) {
       results.push({
-        relativePath: file.fsPath,
+        relativePath: resource.fsPath,
         pattern: '',
         target,
         file: '',
         status: 'error',
-        message: `"${file.fsPath}" is not inside an open workspace folder.`,
+        message: `"${resource.fsPath}" is not inside an open workspace folder.`,
       });
       continue;
     }
     try {
-      results.push(await addEntry(folder.uri.fsPath, file.fsPath, target));
+      results.push(await addEntry(folder.uri.fsPath, resource.fsPath, target));
     } catch (error) {
       results.push({
-        relativePath: file.fsPath,
+        relativePath: resource.fsPath,
         pattern: '',
         target,
         file: '',
@@ -109,7 +109,7 @@ async function report(target: Target, results: EntryResult[]): Promise<void> {
     const message =
       added.length === 1
         ? `Added ${added[0].relativePath} to ${label}.`
-        : `Added ${added.length} files to ${label}.`;
+        : `Added ${added.length} entries to ${label}.`;
     const open = `Open ${label}`;
     const choice = await vscode.window.showInformationMessage(message, open);
     if (choice === open) {
@@ -125,7 +125,7 @@ async function report(target: Target, results: EntryResult[]): Promise<void> {
     vscode.window.showInformationMessage(
       skipped.length === 1
         ? `${skipped[0].relativePath} is already in ${label}.`
-        : `All ${skipped.length} files are already in ${label}.`,
+        : `All ${skipped.length} entries are already in ${label}.`,
     );
   }
 }

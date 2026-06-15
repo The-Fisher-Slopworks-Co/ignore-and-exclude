@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-Ignore & Exclude is a VS Code extension that adds two file context-menu
-commands: **Add to .gitignore** and **Add to .git/info/exclude**.
+Ignore & Exclude is a VS Code extension that adds two context-menu commands
+for files and folders: **Add to .gitignore** and **Add to .git/info/exclude**.
 
 ## Commands
 

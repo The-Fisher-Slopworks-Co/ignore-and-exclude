@@ -47,6 +47,15 @@ test('separators are preserved, never escaped', () => {
   assert.equal(p, '/a/b/c.txt');
 });
 
+test('a directory gets a trailing slash so it matches only the directory', () => {
+  assert.equal(toIgnorePattern('build', true), '/build/');
+  assert.equal(toIgnorePattern('src/generated', true), '/src/generated/');
+});
+
+test('a directory name with glob metacharacters is escaped and slash-terminated', () => {
+  assert.equal(toIgnorePattern('cache[x]', true), '/cache\\[x\\]/');
+});
+
 test('lineExists matches an existing entry regardless of whitespace/newlines', () => {
   const content = 'node_modules/\r\n/secret.txt\n\n# a comment\n';
   assert.equal(lineExists(content, '/secret.txt'), true);

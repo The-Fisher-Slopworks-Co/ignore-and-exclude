@@ -15,7 +15,7 @@ import { appendLine, lineExists, toIgnorePattern } from './pattern';
 export type Target = 'gitignore' | 'exclude';
 
 export interface EntryResult {
-  /** Workspace-relative POSIX path of the file we were asked to ignore. */
+  /** Workspace-relative POSIX path of the file or directory we were asked to ignore. */
   relativePath: string;
   /** The pattern line that was (or would be) written. */
   pattern: string;
@@ -135,7 +135,18 @@ export async function addEntry(
     };
   }
 
-  const pattern = toIgnorePattern(relativePath);
+  // A directory is ignored with a trailing-slash pattern so it matches only the
+  // directory, never a same-named regular file beside it. Statting is safe here:
+  // paths outside the workspace and unrepresentable names were already rejected,
+  // and a real Explorer/editor selection always exists on disk.
+  let isDirectory = false;
+  try {
+    isDirectory = (await fs.stat(targetFsPath)).isDirectory();
+  } catch {
+    // Unstattable (e.g. just deleted) — fall back to a plain file pattern.
+  }
+
+  const pattern = toIgnorePattern(relativePath, isDirectory);
   const file =
     target === 'gitignore'
       ? path.join(workspaceRoot, '.gitignore')
