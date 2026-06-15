@@ -2,7 +2,7 @@
   "name": "ignore-and-exclude",
   "displayName": "Ignore & Exclude",
   "description": "Add files to .gitignore or .git/info/exclude straight from the Explorer context menu.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "The-Fisher-Slopworks-Co",
   "license": "AGPL-3.0-or-later",
   "repository": {
