@@ -3,28 +3,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * The thin `vscode` adapter: register the two context-menu commands, resolve the
- * selected resource(s) into workspace folders, and hand the real work to
- * `core.ts`. Everything user-facing (resolving selections, reporting results)
- * lives here; the path math and file writes are kept vscode-free for testing.
+ * The command half of the `vscode` layer: register the two context-menu
+ * commands, resolve the selected resource(s) into workspace folders, and hand
+ * the real work to `core.ts` (the sidebar tree view lives in `view.ts`).
+ * Everything user-facing (resolving selections, reporting results) lives here;
+ * the path math and file writes are kept vscode-free for testing.
  */
 import * as vscode from 'vscode';
-import { addEntry, EntryResult, Target } from './core';
-
-const TARGET_LABEL: Record<Target, string> = {
-  gitignore: '.gitignore',
-  exclude: '.git/info/exclude',
-};
+import { addEntry, EntryResult, Target, TARGET_LABEL } from './core';
+import { IgnoreView, registerIgnoreView } from './view';
 
 export function activate(context: vscode.ExtensionContext): void {
+  const view = registerIgnoreView(context);
   context.subscriptions.push(
     vscode.commands.registerCommand(
       'ignoreAndExclude.addToGitignore',
-      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('gitignore', uri, uris),
+      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('gitignore', view, uri, uris),
     ),
     vscode.commands.registerCommand(
       'ignoreAndExclude.addToGitExclude',
-      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('exclude', uri, uris),
+      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('exclude', view, uri, uris),
     ),
   );
 }
@@ -52,7 +50,12 @@ function collectUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
   return active ? onDisk([active]) : [];
 }
 
-async function run(target: Target, uri?: vscode.Uri, uris?: vscode.Uri[]): Promise<void> {
+async function run(
+  target: Target,
+  view: IgnoreView,
+  uri?: vscode.Uri,
+  uris?: vscode.Uri[],
+): Promise<void> {
   const label = TARGET_LABEL[target];
   const resources = collectUris(uri, uris);
   if (resources.length === 0) {
@@ -90,6 +93,10 @@ async function run(target: Target, uri?: vscode.Uri, uris?: vscode.Uri[]): Promi
     }
   }
 
+  // The watchers pick file changes up too, but refreshing here is immediate
+  // and covers targets they cannot watch (e.g. an exclude file in a repo
+  // whose .git directory did not exist when the watchers were built).
+  view.refresh();
   await report(target, results);
 }
 

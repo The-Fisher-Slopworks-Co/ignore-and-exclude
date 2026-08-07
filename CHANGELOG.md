@@ -2,6 +2,24 @@
 
 All notable changes to the **Ignore & Exclude** extension are documented here.
 
+## [0.3.0] - 2026-08-07
+
+### Added
+
+- **Sidebar panel**
+  ([#5](https://github.com/The-Fisher-Slopworks-Co/ignore-and-exclude/issues/5)):
+  an **Ignore & Exclude** view in the Explorer that lists every entry of
+  `.gitignore` and `.git/info/exclude` — including hand-written ones — grouped
+  per file, and per folder in multi-root workspaces.
+- Checkbox per entry to disable and re-enable it without deleting: a disabled
+  entry stays in the file, commented out with the `#off ` marker, and is
+  restored verbatim when re-checked.
+- Inline actions to remove an entry or open the ignore file (entries jump to
+  their own line), a refresh button, and automatic refresh when either file
+  changes on disk.
+- Adding a path whose pattern is present but disabled now re-enables the
+  existing line instead of appending a duplicate.
+
 ## [0.2.0] - 2026-06-15
 
 ### Added

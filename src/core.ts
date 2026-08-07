@@ -3,16 +3,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /**
- * The filesystem half of the extension: resolve the right target file and add a
- * pattern to it. Deliberately `vscode`-free — it takes plain absolute paths and
- * talks only to `node:fs`, so it can be driven end-to-end against a real temp
- * directory in the smoke test (scripts/smoke-test.mjs).
+ * The filesystem half of the extension: resolve the right target file, add a
+ * pattern to it, and list/toggle/remove the entries the sidebar view shows.
+ * Deliberately `vscode`-free — it takes plain absolute paths and talks only to
+ * `node:fs`, so it can be driven end-to-end against a real temp directory in
+ * the smoke test (scripts/smoke-test.mjs).
  */
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import { appendLine, lineExists, toIgnorePattern } from './pattern';
+import {
+  appendLine,
+  IgnoreEntry,
+  lineExists,
+  parseIgnoreFile,
+  removeLine,
+  setLineEnabled,
+  toIgnorePattern,
+} from './pattern';
 
 export type Target = 'gitignore' | 'exclude';
+
+/** Human-readable name of the ignore file behind each target. */
+export const TARGET_LABEL: Record<Target, string> = {
+  gitignore: '.gitignore',
+  exclude: '.git/info/exclude',
+};
 
 export interface EntryResult {
   /** Workspace-relative POSIX path of the file or directory we were asked to ignore. */
@@ -147,17 +162,83 @@ export async function addEntry(
   }
 
   const pattern = toIgnorePattern(relativePath, isDirectory);
-  const file =
-    target === 'gitignore'
-      ? path.join(workspaceRoot, '.gitignore')
-      : await resolveExcludeFile(workspaceRoot);
+  const file = await ignoreFilePath(workspaceRoot, target);
 
   const content = await readIfExists(file);
   if (lineExists(content, pattern)) {
     return { relativePath, pattern, target, file, status: 'skipped' };
   }
 
+  // A copy disabled from the sidebar view (`#off ` marker) is re-enabled in
+  // place instead of being appended a second time.
+  const reEnabled = setLineEnabled(content, pattern, true);
+  const updated = reEnabled !== content ? reEnabled : appendLine(content, pattern);
+
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, appendLine(content, pattern), 'utf8');
+  await fs.writeFile(file, updated, 'utf8');
   return { relativePath, pattern, target, file, status: 'added' };
+}
+
+/** Absolute path of the ignore file backing `target` for this workspace. */
+export async function ignoreFilePath(workspaceRoot: string, target: Target): Promise<string> {
+  return target === 'gitignore'
+    ? path.join(workspaceRoot, '.gitignore')
+    : resolveExcludeFile(workspaceRoot);
+}
+
+/** The parsed contents of one ignore file, for the sidebar view. */
+export interface IgnoreFileEntries {
+  target: Target;
+  /** Absolute path of the ignore file (it may not exist yet). */
+  file: string;
+  entries: IgnoreEntry[];
+}
+
+/** Parse both ignore files of a workspace folder (a missing file has no entries). */
+export async function listEntries(workspaceRoot: string): Promise<IgnoreFileEntries[]> {
+  const targets: Target[] = ['gitignore', 'exclude'];
+  return Promise.all(
+    targets.map(async (target) => {
+      const file = await ignoreFilePath(workspaceRoot, target);
+      return { target, file, entries: parseIgnoreFile(await readIfExists(file)) };
+    }),
+  );
+}
+
+/**
+ * Toggle an entry: disabling comments the line out with the `#off ` marker,
+ * enabling strips the marker again. Returns false — writing nothing — when no
+ * matching line was found (the file changed under us).
+ */
+export async function setEntryEnabled(
+  workspaceRoot: string,
+  target: Target,
+  pattern: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const file = await ignoreFilePath(workspaceRoot, target);
+  const content = await readIfExists(file);
+  const updated = setLineEnabled(content, pattern, enabled);
+  if (updated === content) {
+    return false;
+  }
+  await fs.writeFile(file, updated, 'utf8');
+  return true;
+}
+
+/** Delete an entry's line outright. Returns false when it was already gone. */
+export async function removeEntry(
+  workspaceRoot: string,
+  target: Target,
+  pattern: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const file = await ignoreFilePath(workspaceRoot, target);
+  const content = await readIfExists(file);
+  const updated = removeLine(content, pattern, enabled);
+  if (updated === content) {
+    return false;
+  }
+  await fs.writeFile(file, updated, 'utf8');
+  return true;
 }

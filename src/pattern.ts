@@ -69,3 +69,101 @@ export function appendLine(content: string, line: string): string {
   const separator = content.endsWith('\n') ? '' : '\n';
   return content + separator + line + '\n';
 }
+
+/**
+ * Marker that comments out an entry disabled from the sidebar view. Distinct
+ * from a plain `#` comment so genuine comments are never presented (or
+ * re-enabled) as entries: only lines carrying this exact prefix toggle back on.
+ * To git the line is still just a comment.
+ */
+export const DISABLED_PREFIX = '#off ';
+
+/** One toggleable line of an ignore file, as shown in the sidebar view. */
+export interface IgnoreEntry {
+  /** The pattern text, without the disabled marker. */
+  pattern: string;
+  /** False when the line is commented out with `DISABLED_PREFIX`. */
+  enabled: boolean;
+  /** 0-based line number in the file. */
+  line: number;
+}
+
+/**
+ * Classify one raw line: an active pattern, a disabled (`#off `-prefixed)
+ * pattern, or neither (blank lines and ordinary comments).
+ */
+function parseLine(raw: string): { pattern: string; enabled: boolean } | null {
+  const text = raw.trim();
+  if (text.length === 0) {
+    return null;
+  }
+  if (text.startsWith(DISABLED_PREFIX)) {
+    const pattern = text.slice(DISABLED_PREFIX.length).trim();
+    return pattern.length > 0 ? { pattern, enabled: false } : null;
+  }
+  if (text.startsWith('#')) {
+    return null;
+  }
+  return { pattern: text, enabled: true };
+}
+
+/** Every active or disabled entry of an ignore file, in file order. */
+export function parseIgnoreFile(content: string): IgnoreEntry[] {
+  const entries: IgnoreEntry[] = [];
+  content.split(/\r?\n/).forEach((raw, line) => {
+    const parsed = parseLine(raw);
+    if (parsed) {
+      entries.push({ ...parsed, line });
+    }
+  });
+  return entries;
+}
+
+/**
+ * Split `content` so lines sit at even indices and the newline runs that
+ * separate them (either style) at odd indices — editing one line and joining
+ * the parts back preserves every other byte of the file.
+ */
+function splitKeepingNewlines(content: string): string[] {
+  return content.split(/(\r?\n)/);
+}
+
+/**
+ * Comment an entry out with `DISABLED_PREFIX` (`enabled = false`) or strip the
+ * marker again (`enabled = true`). Rewrites the first line carrying `pattern`
+ * in the opposite state; returns `content` unchanged when there is none.
+ */
+export function setLineEnabled(content: string, pattern: string, enabled: boolean): string {
+  const target = pattern.trim();
+  const parts = splitKeepingNewlines(content);
+  for (let i = 0; i < parts.length; i += 2) {
+    const parsed = parseLine(parts[i]);
+    if (parsed && parsed.pattern === target && parsed.enabled !== enabled) {
+      parts[i] = enabled ? target : DISABLED_PREFIX + target;
+      return parts.join('');
+    }
+  }
+  return content;
+}
+
+/**
+ * Delete the first line carrying `pattern` in the given enabled/disabled
+ * state, along with its newline; returns `content` unchanged when there is
+ * none.
+ */
+export function removeLine(content: string, pattern: string, enabled: boolean): string {
+  const target = pattern.trim();
+  const parts = splitKeepingNewlines(content);
+  for (let i = 0; i < parts.length; i += 2) {
+    const parsed = parseLine(parts[i]);
+    if (parsed && parsed.pattern === target && parsed.enabled === enabled) {
+      if (i + 1 < parts.length) {
+        parts.splice(i, 2); // the line and the newline that ends it
+      } else {
+        parts.splice(i - 1, 2); // the final, newline-less line and the newline before it
+      }
+      return parts.join('');
+    }
+  }
+  return content;
+}

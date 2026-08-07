@@ -1,7 +1,10 @@
 # CLAUDE.md
 
 Ignore & Exclude is a VS Code extension that adds two context-menu commands
-for files and folders: **Add to .gitignore** and **Add to .git/info/exclude**.
+for files and folders — **Add to .gitignore** and **Add to .git/info/exclude** —
+plus an Explorer sidebar view that lists the entries of both files, with a
+checkbox per entry (disabling comments the line out with the `#off ` marker)
+and inline remove/open actions.
 
 ## Commands
 
@@ -20,19 +23,24 @@ Extension Development Host. Package: `npx @vscode/vsce package` → `*.vsix`.
 
 ## Architecture
 
-Three source files in `src/` (compiled to `out/`):
+Four source files in `src/` (compiled to `out/`):
 
 - `pattern.ts` — **pure functions, no `vscode` and no `fs`.** Turns a
   workspace-relative path into an anchored, escaped gitignore pattern, and
-  manages the lines of an ignore file (`lineExists`, `appendLine`). Tested by
-  `scripts/check-pattern.mjs`.
+  manages the lines of an ignore file (`lineExists`, `appendLine`,
+  `parseIgnoreFile`, `setLineEnabled`, `removeLine`, and the `#off ` disabled
+  marker). Tested by `scripts/check-pattern.mjs`.
 - `core.ts` — **`vscode`-free** filesystem layer: resolves the target file
   (`.gitignore`, or `.git/info/exclude` including `.git`-pointer-file and
-  worktree `commondir` cases) and writes the entry idempotently. Driven against
-  a real temp repo by `scripts/smoke-test.mjs`.
-- `extension.ts` — the thin `vscode` adapter: registers the two commands,
-  resolves the selected resource(s) to workspace folders, calls `core.ts`, and
-  reports results. Keep `vscode` usage confined to this file.
+  worktree `commondir` cases), writes the entry idempotently, and
+  lists/toggles/removes entries for the view. Driven against a real temp repo
+  by `scripts/smoke-test.mjs`.
+- `extension.ts` — the `vscode` adapter for the commands: registers the two
+  add commands, resolves the selected resource(s) to workspace folders, calls
+  `core.ts`, and reports results.
+- `view.ts` — the `vscode` adapter for the sidebar: the `ignoreAndExclude.entries`
+  Explorer tree view (checkbox toggling, remove/open actions, file watchers).
+  Keep `vscode` usage confined to `extension.ts` and `view.ts`.
 
 ## Conventions
 
