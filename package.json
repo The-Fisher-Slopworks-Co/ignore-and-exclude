@@ -1,8 +1,8 @@
 {
   "name": "ignore-and-exclude",
   "displayName": "Ignore & Exclude",
-  "description": "Add files to .gitignore or .git/info/exclude straight from the Explorer context menu.",
-  "version": "0.2.0",
+  "description": "Add files to .gitignore or .git/info/exclude straight from the Explorer context menu, and manage the entries from a sidebar view.",
+  "version": "0.3.0",
   "publisher": "The-Fisher-Slopworks-Co",
   "license": "AGPL-3.0-or-later",
   "repository": {
@@ -45,6 +45,40 @@
         "command": "ignoreAndExclude.addToGitExclude",
         "title": "Add to .git/info/exclude",
         "category": "Ignore & Exclude"
+      },
+      {
+        "command": "ignoreAndExclude.refreshView",
+        "title": "Refresh",
+        "category": "Ignore & Exclude",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ignoreAndExclude.removeEntry",
+        "title": "Remove Entry",
+        "category": "Ignore & Exclude",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "ignoreAndExclude.openIgnoreFile",
+        "title": "Open Ignore File",
+        "category": "Ignore & Exclude",
+        "icon": "$(go-to-file)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "ignoreAndExclude.entries",
+          "name": "Ignore & Exclude",
+          "icon": "$(eye-closed)",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "ignoreAndExclude.entries",
+        "contents": "No ignore entries yet.\nRight-click a file or folder in the Explorer and choose \"Add to .gitignore\" or \"Add to .git/info/exclude\" — every entry of both files will show up here, with a checkbox to toggle it."
       }
     ],
     "menus": {
@@ -80,6 +114,37 @@
         {
           "command": "ignoreAndExclude.addToGitExclude",
           "when": "editorIsOpen"
+        },
+        {
+          "command": "ignoreAndExclude.refreshView",
+          "when": "false"
+        },
+        {
+          "command": "ignoreAndExclude.removeEntry",
+          "when": "false"
+        },
+        {
+          "command": "ignoreAndExclude.openIgnoreFile",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "ignoreAndExclude.refreshView",
+          "when": "view == ignoreAndExclude.entries",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ignoreAndExclude.openIgnoreFile",
+          "when": "view == ignoreAndExclude.entries && viewItem == ignoreAndExclude.file",
+          "group": "inline"
+        },
+        {
+          "command": "ignoreAndExclude.removeEntry",
+          "when": "view == ignoreAndExclude.entries && viewItem == ignoreAndExclude.entry",
+          "group": "inline"
         }
       ]
     }

@@ -50,6 +50,24 @@ clear error instead of writing somewhere unexpected. Repositories whose `.git`
 is a pointer file (submodules and linked worktrees) are resolved correctly, so
 the exclude entry lands in the real git directory.
 
+## The sidebar panel
+
+The **Ignore & Exclude** view in the Explorer sidebar lists every entry of
+`.gitignore` and `.git/info/exclude`, grouped per file (and per folder in a
+multi-root workspace). It shows hand-written entries too — anything that isn't
+a comment or a blank line — so it works on existing ignore files, not just
+ones this extension wrote.
+
+- **Checkbox** — toggle an entry off and on without losing it. A disabled
+  entry stays in the file, commented out as `#off /pattern`, and re-checking
+  restores exactly the same line. Adding the same path again from the context
+  menu also just re-enables it.
+- **Trash icon** — delete the entry's line for good.
+- **Click an entry** to jump to its line in the underlying file; the file rows
+  have an open-file action of their own.
+- The view refreshes automatically when either file changes on disk, and the
+  title bar has a manual refresh button just in case.
+
 ## Develop / run from source
 
 ```bash
@@ -71,8 +89,8 @@ npm run make:icon   # regenerate icon.png
 You can also install the packaged build directly:
 
 ```bash
-npx @vscode/vsce package           # produces ignore-and-exclude-0.2.0.vsix
-code --install-extension ignore-and-exclude-0.2.0.vsix
+npx @vscode/vsce package           # produces ignore-and-exclude-0.3.0.vsix
+code --install-extension ignore-and-exclude-0.3.0.vsix
 ```
 
 Tagged releases (`v*`) are built and published automatically by CI, which

@@ -35,11 +35,71 @@ function fileUri(fsPath) {
   return { scheme: 'file', fsPath, path: fsPath, toString: () => `file://${fsPath}` };
 }
 
+class MockEventEmitter {
+  constructor() {
+    this.listeners = new Set();
+    this.event = (listener) => {
+      this.listeners.add(listener);
+      return { dispose: () => this.listeners.delete(listener) };
+    };
+  }
+  fire(payload) {
+    for (const listener of [...this.listeners]) {
+      listener(payload);
+    }
+  }
+  dispose() {
+    this.listeners.clear();
+  }
+}
+
+class MockTreeItem {
+  constructor(label, collapsibleState) {
+    this.label = label;
+    this.collapsibleState = collapsibleState;
+  }
+}
+
+class MockThemeIcon {
+  constructor(id) {
+    this.id = id;
+  }
+}
+MockThemeIcon.File = new MockThemeIcon('file');
+MockThemeIcon.Folder = new MockThemeIcon('folder');
+
+class MockRelativePattern {
+  constructor(base, pattern) {
+    this.base = base;
+    this.pattern = pattern;
+  }
+}
+
+class MockRange {
+  constructor(startLine, startCharacter, endLine, endCharacter) {
+    this.start = { line: startLine, character: startCharacter };
+    this.end = { line: endLine, character: endCharacter };
+  }
+}
+
 function buildMock(root) {
-  const calls = { commands: new Map(), info: [], warn: [], error: [], opened: [] };
+  const calls = { commands: new Map(), treeViews: new Map(), info: [], warn: [], error: [], opened: [] };
+  const noopWatcher = () => ({
+    onDidCreate: () => ({ dispose() {} }),
+    onDidChange: () => ({ dispose() {} }),
+    onDidDelete: () => ({ dispose() {} }),
+    dispose() {},
+  });
   const mock = {
     vscode: {
       Uri: { file: (p) => fileUri(p) },
+      EventEmitter: MockEventEmitter,
+      TreeItem: MockTreeItem,
+      ThemeIcon: MockThemeIcon,
+      RelativePattern: MockRelativePattern,
+      Range: MockRange,
+      TreeItemCollapsibleState: { None: 0, Collapsed: 1, Expanded: 2 },
+      TreeItemCheckboxState: { Unchecked: 0, Checked: 1 },
       window: {
         activeTextEditor: undefined,
         showInformationMessage: async (m) => {
@@ -58,6 +118,20 @@ function buildMock(root) {
           calls.opened.push(d);
           return d;
         },
+        createTreeView: (id, options) => {
+          const view = {
+            id,
+            options,
+            checkboxListeners: [],
+            onDidChangeCheckboxState(listener) {
+              view.checkboxListeners.push(listener);
+              return { dispose() {} };
+            },
+            dispose() {},
+          };
+          calls.treeViews.set(id, view);
+          return view;
+        },
       },
       commands: {
         registerCommand: (id, handler) => {
@@ -66,7 +140,10 @@ function buildMock(root) {
         },
       },
       workspace: {
+        workspaceFolders: [{ uri: fileUri(root), name: path.basename(root), index: 0 }],
         openTextDocument: async (uri) => ({ uri }),
+        createFileSystemWatcher: noopWatcher,
+        onDidChangeWorkspaceFolders: () => ({ dispose() {} }),
         getWorkspaceFolder: (uri) => {
           const rel = path.relative(root, uri.fsPath);
           if (rel === '' || rel.startsWith('..') || path.isAbsolute(rel)) {
@@ -83,7 +160,7 @@ function buildMock(root) {
 
 function loadExtension(mock) {
   currentMock = mock;
-  for (const name of ['extension', 'core', 'pattern']) {
+  for (const name of ['extension', 'view', 'core', 'pattern']) {
     delete require.cache[require.resolve(`../out/${name}.js`)];
   }
   const ext = require('../out/extension.js');
@@ -94,6 +171,18 @@ function loadExtension(mock) {
 
 const ADD_GITIGNORE = 'ignoreAndExclude.addToGitignore';
 const ADD_EXCLUDE = 'ignoreAndExclude.addToGitExclude';
+const REMOVE_ENTRY = 'ignoreAndExclude.removeEntry';
+const OPEN_IGNORE_FILE = 'ignoreAndExclude.openIgnoreFile';
+const REFRESH_VIEW = 'ignoreAndExclude.refreshView';
+const VIEW_ID = 'ignoreAndExclude.entries';
+
+/** The tree view's provider plus its root-level nodes, as VS Code would query them. */
+async function viewRoots(mock) {
+  const view = mock.calls.treeViews.get(VIEW_ID);
+  assert.ok(view, 'the tree view must be created on activation');
+  const provider = view.options.treeDataProvider;
+  return { view, provider, roots: await provider.getChildren() };
+}
 
 let passed = 0;
 const test = async (name, fn) => {
@@ -112,15 +201,22 @@ function freshWorkspace({ gitDir = true } = {}) {
   return root;
 }
 
-// ---- command-id parity with package.json ------------------------------------
-await test('both package.json commands are registered (and vice versa)', async () => {
+// ---- command-id and view-id parity with package.json ------------------------
+await test('all package.json commands and views are registered (and vice versa)', async () => {
   const pkg = JSON.parse(readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8'));
   const declared = pkg.contributes.commands.map((c) => c.command).sort();
   const mock = buildMock(freshWorkspace());
   loadExtension(mock);
   const registered = [...mock.calls.commands.keys()].sort();
   assert.deepEqual(registered, declared, 'registered commands must match declared commands exactly');
-  assert.deepEqual(declared, [ADD_EXCLUDE, ADD_GITIGNORE].sort());
+  assert.deepEqual(
+    declared,
+    [ADD_EXCLUDE, ADD_GITIGNORE, OPEN_IGNORE_FILE, REFRESH_VIEW, REMOVE_ENTRY].sort(),
+  );
+
+  const declaredViews = pkg.contributes.views.explorer.map((v) => v.id).sort();
+  const createdViews = [...mock.calls.treeViews.keys()].sort();
+  assert.deepEqual(createdViews, declaredViews, 'created tree views must match declared views exactly');
 });
 
 // ---- add a root file to .gitignore ------------------------------------------
@@ -325,6 +421,116 @@ await test('with no args, falls back to the active editor document', async () =>
 
   const gitignore = readFileSync(path.join(root, '.gitignore'), 'utf8');
   assert.equal(gitignore, '/active.txt\n');
+});
+
+// ---- sidebar view: listing --------------------------------------------------
+await test('the sidebar view lists both ignore files with their entries', async () => {
+  const root = freshWorkspace();
+  writeFileSync(
+    path.join(root, '.gitignore'),
+    '/a.txt\n#off /b.txt\n# just a comment\n\n/logs/\n',
+  );
+  writeFileSync(path.join(root, '.git', 'info', 'exclude'), '/local.txt\n');
+  const mock = buildMock(root);
+  loadExtension(mock);
+
+  const { provider, roots } = await viewRoots(mock);
+  assert.deepEqual(
+    roots.map((n) => [n.kind, n.target]),
+    [['file', 'gitignore'], ['file', 'exclude']],
+    'one node per ignore file, .gitignore first',
+  );
+
+  const gitignoreEntries = await provider.getChildren(roots[0]);
+  assert.deepEqual(
+    gitignoreEntries.map((e) => [e.pattern, e.enabled]),
+    [['/a.txt', true], ['/b.txt', false], ['/logs/', true]],
+    'comments and blank lines are not entries; the #off line is a disabled entry',
+  );
+
+  assert.equal(provider.getTreeItem(gitignoreEntries[0]).checkboxState.state, 1, 'active → checked');
+  assert.equal(provider.getTreeItem(gitignoreEntries[1]).checkboxState.state, 0, 'disabled → unchecked');
+
+  const excludeEntries = await provider.getChildren(roots[1]);
+  assert.deepEqual(excludeEntries.map((e) => e.pattern), ['/local.txt']);
+});
+
+// ---- sidebar view: nothing to show ------------------------------------------
+await test('with no ignore files the view is empty (welcome content territory)', async () => {
+  const mock = buildMock(freshWorkspace());
+  loadExtension(mock);
+  const { roots } = await viewRoots(mock);
+  assert.deepEqual(roots, []);
+});
+
+// ---- sidebar view: checkbox toggling -----------------------------------------
+await test('unchecking an entry comments it out with #off; rechecking restores it', async () => {
+  const root = freshWorkspace();
+  const gitignore = path.join(root, '.gitignore');
+  writeFileSync(gitignore, '/keep.txt\n/toggle.txt\n');
+  const mock = buildMock(root);
+  loadExtension(mock);
+
+  const { view, provider, roots } = await viewRoots(mock);
+  const entries = await provider.getChildren(roots[0]);
+  const toggle = entries.find((e) => e.pattern === '/toggle.txt');
+  await view.checkboxListeners[0]({ items: [[toggle, 0 /* Unchecked */]] });
+  assert.equal(readFileSync(gitignore, 'utf8'), '/keep.txt\n#off /toggle.txt\n');
+
+  const refreshed = await provider.getChildren((await provider.getChildren())[0]);
+  const disabled = refreshed.find((e) => e.pattern === '/toggle.txt');
+  assert.equal(disabled.enabled, false, 'the disabled entry is still listed');
+  await view.checkboxListeners[0]({ items: [[disabled, 1 /* Checked */]] });
+  assert.equal(readFileSync(gitignore, 'utf8'), '/keep.txt\n/toggle.txt\n');
+});
+
+// ---- sidebar view: removing entries ------------------------------------------
+await test('the remove action deletes the entry line, enabled or disabled', async () => {
+  const root = freshWorkspace();
+  const gitignore = path.join(root, '.gitignore');
+  writeFileSync(gitignore, '/a.txt\n/b.txt\n#off /c.txt\n');
+  const mock = buildMock(root);
+  loadExtension(mock);
+
+  const { provider, roots } = await viewRoots(mock);
+  const entries = await provider.getChildren(roots[0]);
+  await mock.calls.commands.get(REMOVE_ENTRY)(entries.find((e) => e.pattern === '/b.txt'));
+  assert.equal(readFileSync(gitignore, 'utf8'), '/a.txt\n#off /c.txt\n');
+
+  const refreshed = await provider.getChildren((await provider.getChildren())[0]);
+  await mock.calls.commands.get(REMOVE_ENTRY)(refreshed.find((e) => e.pattern === '/c.txt'));
+  assert.equal(readFileSync(gitignore, 'utf8'), '/a.txt\n');
+});
+
+// ---- sidebar view: click-through to the file ----------------------------------
+await test('activating an entry opens the ignore file that contains it', async () => {
+  const root = freshWorkspace();
+  writeFileSync(path.join(root, '.gitignore'), '/a.txt\n');
+  const mock = buildMock(root);
+  loadExtension(mock);
+
+  const { provider, roots } = await viewRoots(mock);
+  const [entry] = await provider.getChildren(roots[0]);
+  const item = provider.getTreeItem(entry);
+  assert.equal(item.command.command, OPEN_IGNORE_FILE, 'clicking an entry opens the file');
+  await mock.calls.commands.get(OPEN_IGNORE_FILE)(...item.command.arguments);
+  assert.equal(mock.calls.opened.length, 1);
+  assert.equal(mock.calls.opened[0].uri.fsPath, path.join(root, '.gitignore'));
+});
+
+// ---- adding a disabled duplicate re-enables it instead of appending ----------
+await test('adding a path whose pattern is disabled re-enables the existing line', async () => {
+  const root = freshWorkspace();
+  const gitignore = path.join(root, '.gitignore');
+  writeFileSync(gitignore, '#off /secret.txt\n');
+  const target = path.join(root, 'secret.txt');
+  writeFileSync(target, 'shh');
+  const mock = buildMock(root);
+  loadExtension(mock);
+  await mock.calls.commands.get(ADD_GITIGNORE)(fileUri(target));
+
+  assert.equal(readFileSync(gitignore, 'utf8'), '/secret.txt\n', 'no duplicate line');
+  assert.match(mock.calls.info[0], /Added secret\.txt to \.gitignore/);
 });
 
 // ---- cleanup ----------------------------------------------------------------
