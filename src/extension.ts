@@ -114,26 +114,28 @@ async function report(target: Target, results: EntryResult[]): Promise<void> {
     );
   }
 
-  if (added.length > 0) {
+  const [firstAdded] = added;
+  if (firstAdded) {
     const message =
       added.length === 1
-        ? `Added ${added[0].relativePath} to ${label}.`
+        ? `Added ${firstAdded.relativePath} to ${label}.`
         : `Added ${added.length} entries to ${label}.`;
     const open = `Open ${label}`;
     const choice = await vscode.window.showInformationMessage(message, open);
     if (choice === open) {
       const document = await vscode.workspace.openTextDocument(
-        vscode.Uri.file(added[0].file),
+        vscode.Uri.file(firstAdded.file),
       );
       await vscode.window.showTextDocument(document);
     }
     return;
   }
 
-  if (errors.length === 0 && skipped.length > 0) {
+  const [firstSkipped] = skipped;
+  if (errors.length === 0 && firstSkipped) {
     vscode.window.showInformationMessage(
       skipped.length === 1
-        ? `${skipped[0].relativePath} is already in ${label}.`
+        ? `${firstSkipped.relativePath} is already in ${label}.`
         : `All ${skipped.length} entries are already in ${label}.`,
     );
   }

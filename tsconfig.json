@@ -10,6 +10,18 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    // An optional property means "may be absent", not "may be present and
+    // undefined" — so a maybe-undefined value can't be forwarded into one by
+    // accident. Option bags that genuinely accept both spell it `?: T |
+    // undefined`.
+    "exactOptionalPropertyTypes": true,
+    // `verbatimModuleSyntax` stays off: VS Code ^1.85 loads extensions as
+    // CommonJS, and under `"module": "commonjs"` that flag rejects every ESM
+    // `import`/`export` in src/ (TS1295). It would mean rewriting the modules
+    // to `import x = require()` / `export =`, or bundling, for no runtime gain.
     "esModuleInterop": true,
     "skipLibCheck": true
   },
