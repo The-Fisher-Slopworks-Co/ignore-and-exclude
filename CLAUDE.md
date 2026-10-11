@@ -21,6 +21,20 @@ npm run make:icon   # regenerate icon.png (dependency-free PNG encoder)
 Run from source: `npm run compile`, then press **F5** in VS Code to launch an
 Extension Development Host. Package: `npx @vscode/vsce package` → `*.vsix`.
 
+## Definition of done
+
+- **Issues and pull requests are written in English** — title and body, whatever language the task was discussed in.
+- **Never commit to main.** Every task starts on a fresh branch off `origin/main`, named `<type>/<short-task>` — `fix/`, `feat/`, `refactor/`, `chore/`.
+- **One task = one branch = one PR.** Past ~300 changed lines, split it into several PRs. `.github/workflows/pr-size.yml` labels every PR `size:XS`…`size:XXL`; **`size:XL` or `size:XXL` means split the PR**, not "explain why it is large".
+- **PR title is the squash commit subject:** conventional commit with a scope, enforced by `.github/workflows/pr-title.yml`.
+  - Type: `feat` `fix` `refactor` `chore` `docs` `test` `ci` `perf` `revert`.
+  - Scope (required): a top-level `src/` module — `core` `extension` `pattern` `view` — or `deps` `github` `release`. A new module means adding it to the `scopes:` list in that workflow.
+  - Subject: lowercase start, imperative, no trailing period.
+  - The body describes this PR alone, following the PR template.
+- **No AI attribution.** No `Assisted-by:` / `Co-Authored-By: <LLM>` trailers, no agent as commit author or committer, and no "Generated with/by …" lines or agent-platform links in PR bodies. The PR body becomes the squash commit body, so the PR title workflow checks the title, the body and every commit of the PR.
+- **Before opening:** `npm test` green, then open the PR and report its URL.
+- **Never merge locally.** Merging happens on GitHub, squash only.
+
 ## Architecture
 
 Four source files in `src/` (compiled to `out/`):

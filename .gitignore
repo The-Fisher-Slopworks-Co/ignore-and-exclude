@@ -16,5 +16,6 @@ out/
 *.vsix
 .vscode-test/
 
-# Local agent/session state
-.claude/
+# Local agent/session state — only the shared Claude Code settings are committed
+.claude/*
+!.claude/settings.json
