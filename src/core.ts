@@ -83,11 +83,11 @@ export async function resolveExcludeFile(
     gitDir = dotGit;
   } else {
     const pointer = await fs.readFile(dotGit, "utf8");
-    const match = pointer.match(/^gitdir:\s*(.+?)\s*$/m);
-    if (!match) {
+    const pointed = pointer.match(/^gitdir:\s*(.+?)\s*$/m)?.[1];
+    if (!pointed) {
       return path.join(dotGit, "info", "exclude");
     }
-    gitDir = path.resolve(workspaceRoot, match[1]);
+    gitDir = path.resolve(workspaceRoot, pointed);
   }
 
   // A linked worktree's gitdir contains a `commondir` file pointing at the main

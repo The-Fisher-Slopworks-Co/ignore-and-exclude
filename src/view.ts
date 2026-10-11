@@ -75,7 +75,8 @@ class IgnoreTreeProvider
       const folders = vscode.workspace.workspaceFolders ?? [];
       if (folders.length <= 1) {
         // Single-root: skip the folder level, show the two files directly.
-        return folders.length === 1 ? this.fileNodes(folders[0]) : [];
+        const [only] = folders;
+        return only ? this.fileNodes(only) : [];
       }
       const parents: IgnoreNode[] = [];
       for (const folder of folders) {

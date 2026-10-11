@@ -143,8 +143,11 @@ export function setLineEnabled(
 ): string {
   const target = pattern.trim();
   const parts = splitKeepingNewlines(content);
-  for (let i = 0; i < parts.length; i += 2) {
-    const parsed = parseLine(parts[i]);
+  for (const [i, line] of parts.entries()) {
+    if (i % 2 !== 0) {
+      continue; // a newline run, not a line
+    }
+    const parsed = parseLine(line);
     if (parsed && parsed.pattern === target && parsed.enabled !== enabled) {
       parts[i] = enabled ? target : DISABLED_PREFIX + target;
       return parts.join("");
@@ -165,8 +168,11 @@ export function removeLine(
 ): string {
   const target = pattern.trim();
   const parts = splitKeepingNewlines(content);
-  for (let i = 0; i < parts.length; i += 2) {
-    const parsed = parseLine(parts[i]);
+  for (const [i, line] of parts.entries()) {
+    if (i % 2 !== 0) {
+      continue; // a newline run, not a line
+    }
+    const parsed = parseLine(line);
     if (parsed && parsed.pattern === target && parsed.enabled === enabled) {
       if (i + 1 < parts.length) {
         parts.splice(i, 2); // the line and the newline that ends it
