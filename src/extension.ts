@@ -9,20 +9,22 @@
  * Everything user-facing (resolving selections, reporting results) lives here;
  * the path math and file writes are kept vscode-free for testing.
  */
-import * as vscode from 'vscode';
-import { addEntry, EntryResult, Target, TARGET_LABEL } from './core';
-import { IgnoreView, registerIgnoreView } from './view';
+import * as vscode from "vscode";
+import { addEntry, EntryResult, Target, TARGET_LABEL } from "./core";
+import { IgnoreView, registerIgnoreView } from "./view";
 
 export function activate(context: vscode.ExtensionContext): void {
   const view = registerIgnoreView(context);
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      'ignoreAndExclude.addToGitignore',
-      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('gitignore', view, uri, uris),
+      "ignoreAndExclude.addToGitignore",
+      (uri?: vscode.Uri, uris?: vscode.Uri[]) =>
+        run("gitignore", view, uri, uris),
     ),
     vscode.commands.registerCommand(
-      'ignoreAndExclude.addToGitExclude',
-      (uri?: vscode.Uri, uris?: vscode.Uri[]) => run('exclude', view, uri, uris),
+      "ignoreAndExclude.addToGitExclude",
+      (uri?: vscode.Uri, uris?: vscode.Uri[]) =>
+        run("exclude", view, uri, uris),
     ),
   );
 }
@@ -38,7 +40,7 @@ export function deactivate(): void {
  */
 function collectUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
   const onDisk = (list: vscode.Uri[]): vscode.Uri[] =>
-    list.filter((u) => u && u.scheme === 'file');
+    list.filter((u) => u && u.scheme === "file");
 
   if (uris && uris.length > 0) {
     return onDisk(uris);
@@ -71,10 +73,10 @@ async function run(
     if (!folder) {
       results.push({
         relativePath: resource.fsPath,
-        pattern: '',
+        pattern: "",
         target,
-        file: '',
-        status: 'error',
+        file: "",
+        status: "error",
         message: `"${resource.fsPath}" is not inside an open workspace folder.`,
       });
       continue;
@@ -84,10 +86,10 @@ async function run(
     } catch (error) {
       results.push({
         relativePath: resource.fsPath,
-        pattern: '',
+        pattern: "",
         target,
-        file: '',
-        status: 'error',
+        file: "",
+        status: "error",
         message: (error as Error).message,
       });
     }
@@ -102,13 +104,13 @@ async function run(
 
 async function report(target: Target, results: EntryResult[]): Promise<void> {
   const label = TARGET_LABEL[target];
-  const added = results.filter((r) => r.status === 'added');
-  const skipped = results.filter((r) => r.status === 'skipped');
-  const errors = results.filter((r) => r.status === 'error');
+  const added = results.filter((r) => r.status === "added");
+  const skipped = results.filter((r) => r.status === "skipped");
+  const errors = results.filter((r) => r.status === "error");
 
   if (errors.length > 0) {
     vscode.window.showErrorMessage(
-      `Ignore & Exclude: ${errors.map((e) => e.message).join(' ')}`,
+      `Ignore & Exclude: ${errors.map((e) => e.message).join(" ")}`,
     );
   }
 

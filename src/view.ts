@@ -12,8 +12,8 @@
  * an entry or jump into the underlying file. All parsing and file writes stay
  * in pattern.ts / core.ts; this module only renders and dispatches.
  */
-import * as path from 'node:path';
-import * as vscode from 'vscode';
+import * as path from "node:path";
+import * as vscode from "vscode";
 import {
   listEntries,
   removeEntry,
@@ -21,19 +21,19 @@ import {
   setEntryEnabled,
   Target,
   TARGET_LABEL,
-} from './core';
-import { DISABLED_PREFIX } from './pattern';
+} from "./core";
+import { DISABLED_PREFIX } from "./pattern";
 
 /** Must match the view id contributed in package.json. */
-export const VIEW_ID = 'ignoreAndExclude.entries';
+export const VIEW_ID = "ignoreAndExclude.entries";
 
 interface FolderNode {
-  kind: 'folder';
+  kind: "folder";
   folder: vscode.WorkspaceFolder;
 }
 
 interface FileNode {
-  kind: 'file';
+  kind: "file";
   folder: vscode.WorkspaceFolder;
   target: Target;
   /** Absolute path of the ignore file. */
@@ -43,7 +43,7 @@ interface FileNode {
 }
 
 interface EntryNode {
-  kind: 'entry';
+  kind: "entry";
   folder: vscode.WorkspaceFolder;
   target: Target;
   file: string;
@@ -60,7 +60,9 @@ export interface IgnoreView {
   refresh(): void;
 }
 
-class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreView {
+class IgnoreTreeProvider
+  implements vscode.TreeDataProvider<IgnoreNode>, IgnoreView
+{
   private readonly emitter = new vscode.EventEmitter<IgnoreNode | undefined>();
   readonly onDidChangeTreeData = this.emitter.event;
 
@@ -78,33 +80,33 @@ class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreV
       const parents: IgnoreNode[] = [];
       for (const folder of folders) {
         if ((await this.fileNodes(folder)).length > 0) {
-          parents.push({ kind: 'folder', folder });
+          parents.push({ kind: "folder", folder });
         }
       }
       return parents;
     }
-    if (node.kind === 'folder') {
+    if (node.kind === "folder") {
       return this.fileNodes(node.folder);
     }
-    if (node.kind === 'file') {
+    if (node.kind === "file") {
       return this.entryNodes(node);
     }
     return [];
   }
 
   getTreeItem(node: IgnoreNode): vscode.TreeItem {
-    if (node.kind === 'folder') {
+    if (node.kind === "folder") {
       const item = new vscode.TreeItem(
         node.folder.name,
         vscode.TreeItemCollapsibleState.Expanded,
       );
       item.id = `folder:${node.folder.uri.fsPath}`;
       item.iconPath = vscode.ThemeIcon.Folder;
-      item.contextValue = 'ignoreAndExclude.folder';
+      item.contextValue = "ignoreAndExclude.folder";
       return item;
     }
 
-    if (node.kind === 'file') {
+    if (node.kind === "file") {
       const item = new vscode.TreeItem(
         TARGET_LABEL[node.target],
         vscode.TreeItemCollapsibleState.Expanded,
@@ -112,26 +114,31 @@ class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreV
       item.id = `file:${node.folder.uri.fsPath}:${node.target}`;
       item.description = `${node.count}`;
       item.tooltip = node.file;
-      item.iconPath = new vscode.ThemeIcon('file');
-      item.contextValue = 'ignoreAndExclude.file';
+      item.iconPath = new vscode.ThemeIcon("file");
+      item.contextValue = "ignoreAndExclude.file";
       return item;
     }
 
-    const item = new vscode.TreeItem(node.pattern, vscode.TreeItemCollapsibleState.None);
+    const item = new vscode.TreeItem(
+      node.pattern,
+      vscode.TreeItemCollapsibleState.None,
+    );
     item.id = `entry:${node.file}:${node.line}:${node.pattern}`;
-    item.contextValue = 'ignoreAndExclude.entry';
+    item.contextValue = "ignoreAndExclude.entry";
     item.checkboxState = {
       state: node.enabled
         ? vscode.TreeItemCheckboxState.Checked
         : vscode.TreeItemCheckboxState.Unchecked,
-      tooltip: node.enabled ? 'Uncheck to disable this entry' : 'Check to re-enable this entry',
+      tooltip: node.enabled
+        ? "Uncheck to disable this entry"
+        : "Check to re-enable this entry",
     };
     item.tooltip = node.enabled
       ? `Active in ${TARGET_LABEL[node.target]} — uncheck to disable it. The line is kept, commented out as "${DISABLED_PREFIX}${node.pattern}".`
       : `Disabled — sits in ${TARGET_LABEL[node.target]} as "${DISABLED_PREFIX}${node.pattern}". Check to re-enable it.`;
     item.command = {
-      command: 'ignoreAndExclude.openIgnoreFile',
-      title: 'Open Ignore File',
+      command: "ignoreAndExclude.openIgnoreFile",
+      title: "Open Ignore File",
       arguments: [node],
     };
     return item;
@@ -142,7 +149,7 @@ class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreV
     return files
       .filter((f) => f.entries.length > 0)
       .map((f) => ({
-        kind: 'file' as const,
+        kind: "file" as const,
         folder,
         target: f.target,
         file: f.file,
@@ -157,7 +164,7 @@ class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreV
       return [];
     }
     return match.entries.map((entry) => ({
-      kind: 'entry' as const,
+      kind: "entry" as const,
       folder: node.folder,
       target: node.target,
       file: match.file,
@@ -169,7 +176,9 @@ class IgnoreTreeProvider implements vscode.TreeDataProvider<IgnoreNode>, IgnoreV
 }
 
 /** Create the tree view, its commands, and the file watchers that keep it fresh. */
-export function registerIgnoreView(context: vscode.ExtensionContext): IgnoreView {
+export function registerIgnoreView(
+  context: vscode.ExtensionContext,
+): IgnoreView {
   const provider = new IgnoreTreeProvider();
   const treeView = vscode.window.createTreeView(VIEW_ID, {
     treeDataProvider: provider,
@@ -191,7 +200,7 @@ export function registerIgnoreView(context: vscode.ExtensionContext): IgnoreView
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
       const exclude = await resolveExcludeFile(folder.uri.fsPath);
       const globs = [
-        new vscode.RelativePattern(folder, '.gitignore'),
+        new vscode.RelativePattern(folder, ".gitignore"),
         new vscode.RelativePattern(
           vscode.Uri.file(path.dirname(exclude)),
           path.basename(exclude),
@@ -213,7 +222,7 @@ export function registerIgnoreView(context: vscode.ExtensionContext): IgnoreView
     { dispose: disposeWatchers },
     treeView.onDidChangeCheckboxState(async (event) => {
       for (const [node, state] of event.items) {
-        if (node.kind === 'entry') {
+        if (node.kind === "entry") {
           await setEntryEnabled(
             node.folder.uri.fsPath,
             node.target,
@@ -228,26 +237,35 @@ export function registerIgnoreView(context: vscode.ExtensionContext): IgnoreView
       void rebuildWatchers();
       provider.refresh();
     }),
-    vscode.commands.registerCommand('ignoreAndExclude.refreshView', () => provider.refresh()),
+    vscode.commands.registerCommand("ignoreAndExclude.refreshView", () =>
+      provider.refresh(),
+    ),
     vscode.commands.registerCommand(
-      'ignoreAndExclude.removeEntry',
+      "ignoreAndExclude.removeEntry",
       async (node?: IgnoreNode) => {
-        if (!node || node.kind !== 'entry') {
+        if (!node || node.kind !== "entry") {
           return;
         }
-        await removeEntry(node.folder.uri.fsPath, node.target, node.pattern, node.enabled);
+        await removeEntry(
+          node.folder.uri.fsPath,
+          node.target,
+          node.pattern,
+          node.enabled,
+        );
         provider.refresh();
       },
     ),
     vscode.commands.registerCommand(
-      'ignoreAndExclude.openIgnoreFile',
+      "ignoreAndExclude.openIgnoreFile",
       async (node?: IgnoreNode) => {
-        if (!node || node.kind === 'folder') {
+        if (!node || node.kind === "folder") {
           return;
         }
-        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(node.file));
+        const document = await vscode.workspace.openTextDocument(
+          vscode.Uri.file(node.file),
+        );
         const options =
-          node.kind === 'entry'
+          node.kind === "entry"
             ? { selection: new vscode.Range(node.line, 0, node.line, 0) }
             : undefined;
         await vscode.window.showTextDocument(document, options);

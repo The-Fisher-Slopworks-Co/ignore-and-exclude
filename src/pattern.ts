@@ -20,12 +20,12 @@
 
 /** Escape the gitignore glob metacharacters within a single path segment. */
 function escapeSegment(segment: string): string {
-  return segment.replace(/([\\*?[\]])/g, '\\$1');
+  return segment.replace(/([\\*?[\]])/g, "\\$1");
 }
 
 /** Escape any run of trailing spaces so git does not strip them. */
 function escapeTrailingSpaces(pattern: string): string {
-  return pattern.replace(/ +$/, (spaces) => spaces.replace(/ /g, '\\ '));
+  return pattern.replace(/ +$/, (spaces) => spaces.replace(/ /g, "\\ "));
 }
 
 /**
@@ -42,11 +42,14 @@ function escapeTrailingSpaces(pattern: string): string {
  * trailing slash so the pattern matches only the directory, never a same-named
  * regular file beside it.
  */
-export function toIgnorePattern(posixRelativePath: string, isDirectory = false): string {
-  const segments = posixRelativePath.split('/').filter((s) => s.length > 0);
-  const anchored = '/' + segments.map(escapeSegment).join('/');
+export function toIgnorePattern(
+  posixRelativePath: string,
+  isDirectory = false,
+): string {
+  const segments = posixRelativePath.split("/").filter((s) => s.length > 0);
+  const anchored = "/" + segments.map(escapeSegment).join("/");
   const escaped = escapeTrailingSpaces(anchored);
-  return isDirectory ? escaped + '/' : escaped;
+  return isDirectory ? escaped + "/" : escaped;
 }
 
 /**
@@ -64,10 +67,10 @@ export function lineExists(content: string, pattern: string): boolean {
  */
 export function appendLine(content: string, line: string): string {
   if (content.length === 0) {
-    return line + '\n';
+    return line + "\n";
   }
-  const separator = content.endsWith('\n') ? '' : '\n';
-  return content + separator + line + '\n';
+  const separator = content.endsWith("\n") ? "" : "\n";
+  return content + separator + line + "\n";
 }
 
 /**
@@ -76,7 +79,7 @@ export function appendLine(content: string, line: string): string {
  * re-enabled) as entries: only lines carrying this exact prefix toggle back on.
  * To git the line is still just a comment.
  */
-export const DISABLED_PREFIX = '#off ';
+export const DISABLED_PREFIX = "#off ";
 
 /** One toggleable line of an ignore file, as shown in the sidebar view. */
 export interface IgnoreEntry {
@@ -101,7 +104,7 @@ function parseLine(raw: string): { pattern: string; enabled: boolean } | null {
     const pattern = text.slice(DISABLED_PREFIX.length).trim();
     return pattern.length > 0 ? { pattern, enabled: false } : null;
   }
-  if (text.startsWith('#')) {
+  if (text.startsWith("#")) {
     return null;
   }
   return { pattern: text, enabled: true };
@@ -133,14 +136,18 @@ function splitKeepingNewlines(content: string): string[] {
  * marker again (`enabled = true`). Rewrites the first line carrying `pattern`
  * in the opposite state; returns `content` unchanged when there is none.
  */
-export function setLineEnabled(content: string, pattern: string, enabled: boolean): string {
+export function setLineEnabled(
+  content: string,
+  pattern: string,
+  enabled: boolean,
+): string {
   const target = pattern.trim();
   const parts = splitKeepingNewlines(content);
   for (let i = 0; i < parts.length; i += 2) {
     const parsed = parseLine(parts[i]);
     if (parsed && parsed.pattern === target && parsed.enabled !== enabled) {
       parts[i] = enabled ? target : DISABLED_PREFIX + target;
-      return parts.join('');
+      return parts.join("");
     }
   }
   return content;
@@ -151,7 +158,11 @@ export function setLineEnabled(content: string, pattern: string, enabled: boolea
  * state, along with its newline; returns `content` unchanged when there is
  * none.
  */
-export function removeLine(content: string, pattern: string, enabled: boolean): string {
+export function removeLine(
+  content: string,
+  pattern: string,
+  enabled: boolean,
+): string {
   const target = pattern.trim();
   const parts = splitKeepingNewlines(content);
   for (let i = 0; i < parts.length; i += 2) {
@@ -162,7 +173,7 @@ export function removeLine(content: string, pattern: string, enabled: boolean): 
       } else {
         parts.splice(i - 1, 2); // the final, newline-less line and the newline before it
       }
-      return parts.join('');
+      return parts.join("");
     }
   }
   return content;

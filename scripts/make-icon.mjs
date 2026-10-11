@@ -9,10 +9,10 @@
  *
  * Run with: npm run make:icon  (or: node scripts/make-icon.mjs)
  */
-import { deflateSync } from 'node:zlib';
-import { writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { deflateSync } from "node:zlib";
+import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const SIZE = 128;
 
@@ -113,7 +113,7 @@ function crc32(buf) {
 function chunk(type, data) {
   const length = Buffer.alloc(4);
   length.writeUInt32BE(data.length, 0);
-  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
   const crc = Buffer.alloc(4);
   crc.writeUInt32BE(crc32(body), 0);
   return Buffer.concat([length, body, crc]);
@@ -141,13 +141,13 @@ function encodePng(pixels) {
 
   return Buffer.concat([
     sig,
-    chunk('IHDR', ihdr),
-    chunk('IDAT', idat),
-    chunk('IEND', Buffer.alloc(0)),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", idat),
+    chunk("IEND", Buffer.alloc(0)),
   ]);
 }
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const out = path.join(here, '..', 'icon.png');
+const out = path.join(here, "..", "icon.png");
 writeFileSync(out, encodePng(makePixels()));
 console.log(`Wrote ${out} (${SIZE}x${SIZE})`);
