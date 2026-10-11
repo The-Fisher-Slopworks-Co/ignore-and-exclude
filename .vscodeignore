@@ -15,3 +15,5 @@ LICENSES/**
 **/*.map
 **/*.ts
 .prettierrc.json
+.oxlintrc.json
+lefthook.yml

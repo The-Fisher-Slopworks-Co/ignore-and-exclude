@@ -189,7 +189,7 @@ export async function addEntry(
 }
 
 /** Absolute path of the ignore file backing `target` for this workspace. */
-export async function ignoreFilePath(
+async function ignoreFilePath(
   workspaceRoot: string,
   target: Target,
 ): Promise<string> {

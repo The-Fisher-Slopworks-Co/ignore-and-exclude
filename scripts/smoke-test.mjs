@@ -56,7 +56,7 @@ class MockEventEmitter {
     };
   }
   fire(payload) {
-    for (const listener of [...this.listeners]) {
+    for (const listener of this.listeners) {
       listener(payload);
     }
   }
@@ -94,6 +94,13 @@ class MockRange {
   }
 }
 
+const noopWatcher = () => ({
+  onDidCreate: () => ({ dispose() {} }),
+  onDidChange: () => ({ dispose() {} }),
+  onDidDelete: () => ({ dispose() {} }),
+  dispose() {},
+});
+
 function buildMock(root) {
   const calls = {
     commands: new Map(),
@@ -103,12 +110,6 @@ function buildMock(root) {
     error: [],
     opened: [],
   };
-  const noopWatcher = () => ({
-    onDidCreate: () => ({ dispose() {} }),
-    onDidChange: () => ({ dispose() {} }),
-    onDidDelete: () => ({ dispose() {} }),
-    dispose() {},
-  });
   const mock = {
     vscode: {
       Uri: { file: (p) => fileUri(p) },
@@ -227,10 +228,10 @@ await test("all package.json commands and views are registered (and vice versa)"
   const pkg = JSON.parse(
     readFileSync(path.join(import.meta.dirname, "..", "package.json"), "utf8"),
   );
-  const declared = pkg.contributes.commands.map((c) => c.command).sort();
+  const declared = pkg.contributes.commands.map((c) => c.command).toSorted();
   const mock = buildMock(freshWorkspace());
   loadExtension(mock);
-  const registered = [...mock.calls.commands.keys()].sort();
+  const registered = [...mock.calls.commands.keys()].toSorted();
   assert.deepEqual(
     registered,
     declared,
@@ -244,11 +245,13 @@ await test("all package.json commands and views are registered (and vice versa)"
       OPEN_IGNORE_FILE,
       REFRESH_VIEW,
       REMOVE_ENTRY,
-    ].sort(),
+    ].toSorted(),
   );
 
-  const declaredViews = pkg.contributes.views.explorer.map((v) => v.id).sort();
-  const createdViews = [...mock.calls.treeViews.keys()].sort();
+  const declaredViews = pkg.contributes.views.explorer
+    .map((v) => v.id)
+    .toSorted();
+  const createdViews = [...mock.calls.treeViews.keys()].toSorted();
   assert.deepEqual(
     createdViews,
     declaredViews,

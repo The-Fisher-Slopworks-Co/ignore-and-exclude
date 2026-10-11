@@ -13,8 +13,15 @@ permissions:
   contents: write
 
 jobs:
+  # The whole check gate first, the same workflow pull requests run.
+  check:
+    uses: ./.github/workflows/check.yml
+    permissions:
+      contents: read
+
   release:
     name: Build .vsix and publish to Releases
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -26,11 +33,11 @@ jobs:
           node-version: 20
           cache: npm
 
+      # No lifecycle scripts: `prepare` would install the git hooks, which a
+      # release runner has no use for. `vsce package` compiles on its own
+      # through `vscode:prepublish`.
       - name: Install dependencies
-        run: npm ci
-
-      - name: Run the verification gate
-        run: npm test
+        run: npm ci --ignore-scripts
 
       - name: Package the extension
         run: npx --yes @vscode/vsce package --out "ignore-and-exclude-${{ github.ref_name }}.vsix"

@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The `npm run check` gate, run for you at commit time. `npm install` installs
+# the hook (see the `prepare` script); `LEFTHOOK=0 git commit` skips it once.
+#
+# Whole-project steps stay whole-project — tsc and knip have no meaningful
+# partial mode — while oxlint and Prettier only see the staged files. Running
+# in parallel puts the wall clock at the slowest single step rather than
+# their sum.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: typecheck
+      run: npm run typecheck
+
+    - name: lint
+      glob: "*.{ts,mjs}"
+      run: npx oxlint {staged_files}
+
+    # Checks rather than rewrites: a hook that edits staged files silently
+    # widens a `git add -p` commit to the whole file. Run `npm run format`.
+    - name: format
+      glob: "*.{ts,mjs}"
+      run: npx prettier --check {staged_files}
+
+    - name: knip
+      run: npm run knip
+
+    # Whole-tree as well: `reuse lint` also catches a license text that went
+    # missing from LICENSES/, which no single staged file shows.
+    - name: reuse
+      run: npm run reuse
+
+    - name: test
+      run: npm test
