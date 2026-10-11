@@ -9,8 +9,8 @@
  * `node:fs`, so it can be driven end-to-end against a real temp directory in
  * the smoke test (scripts/smoke-test.mjs).
  */
-import { promises as fs } from 'node:fs';
-import * as path from 'node:path';
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
 import {
   appendLine,
   IgnoreEntry,
@@ -19,14 +19,14 @@ import {
   removeLine,
   setLineEnabled,
   toIgnorePattern,
-} from './pattern';
+} from "./pattern";
 
-export type Target = 'gitignore' | 'exclude';
+export type Target = "gitignore" | "exclude";
 
 /** Human-readable name of the ignore file behind each target. */
 export const TARGET_LABEL: Record<Target, string> = {
-  gitignore: '.gitignore',
-  exclude: '.git/info/exclude',
+  gitignore: ".gitignore",
+  exclude: ".git/info/exclude",
 };
 
 export interface EntryResult {
@@ -37,7 +37,7 @@ export interface EntryResult {
   target: Target;
   /** Absolute path of the file we wrote to. */
   file: string;
-  status: 'added' | 'skipped' | 'error';
+  status: "added" | "skipped" | "error";
   message?: string;
 }
 
@@ -66,24 +66,26 @@ function hasControlCharacter(value: string): boolean {
  * If `.git` is absent we still return the conventional location so the caller
  * can create it.
  */
-export async function resolveExcludeFile(workspaceRoot: string): Promise<string> {
-  const dotGit = path.join(workspaceRoot, '.git');
+export async function resolveExcludeFile(
+  workspaceRoot: string,
+): Promise<string> {
+  const dotGit = path.join(workspaceRoot, ".git");
 
-  let stat: import('node:fs').Stats;
+  let stat: import("node:fs").Stats;
   try {
     stat = await fs.stat(dotGit);
   } catch {
-    return path.join(dotGit, 'info', 'exclude');
+    return path.join(dotGit, "info", "exclude");
   }
 
   let gitDir: string;
   if (stat.isDirectory()) {
     gitDir = dotGit;
   } else {
-    const pointer = await fs.readFile(dotGit, 'utf8');
+    const pointer = await fs.readFile(dotGit, "utf8");
     const match = pointer.match(/^gitdir:\s*(.+?)\s*$/m);
     if (!match) {
-      return path.join(dotGit, 'info', 'exclude');
+      return path.join(dotGit, "info", "exclude");
     }
     gitDir = path.resolve(workspaceRoot, match[1]);
   }
@@ -91,7 +93,9 @@ export async function resolveExcludeFile(workspaceRoot: string): Promise<string>
   // A linked worktree's gitdir contains a `commondir` file pointing at the main
   // git directory, which is where info/exclude actually lives.
   try {
-    const commondir = (await fs.readFile(path.join(gitDir, 'commondir'), 'utf8')).trim();
+    const commondir = (
+      await fs.readFile(path.join(gitDir, "commondir"), "utf8")
+    ).trim();
     if (commondir) {
       gitDir = path.resolve(gitDir, commondir);
     }
@@ -99,14 +103,14 @@ export async function resolveExcludeFile(workspaceRoot: string): Promise<string>
     // No commondir — a plain repository or submodule. Use gitDir as-is.
   }
 
-  return path.join(gitDir, 'info', 'exclude');
+  return path.join(gitDir, "info", "exclude");
 }
 
 async function readIfExists(file: string): Promise<string> {
   try {
-    return await fs.readFile(file, 'utf8');
+    return await fs.readFile(file, "utf8");
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -123,15 +127,19 @@ export async function addEntry(
   target: Target,
 ): Promise<EntryResult> {
   const relativeNative = path.relative(workspaceRoot, targetFsPath);
-  const relativePath = relativeNative.split(path.sep).join('/');
+  const relativePath = relativeNative.split(path.sep).join("/");
 
-  if (relativeNative === '' || relativeNative.startsWith('..') || path.isAbsolute(relativeNative)) {
+  if (
+    relativeNative === "" ||
+    relativeNative.startsWith("..") ||
+    path.isAbsolute(relativeNative)
+  ) {
     return {
       relativePath: relativePath || targetFsPath,
-      pattern: '',
+      pattern: "",
       target,
-      file: '',
-      status: 'error',
+      file: "",
+      status: "error",
       message: `"${path.basename(targetFsPath)}" is outside the workspace folder.`,
     };
   }
@@ -142,10 +150,10 @@ export async function addEntry(
   if (hasControlCharacter(relativePath)) {
     return {
       relativePath,
-      pattern: '',
+      pattern: "",
       target,
-      file: '',
-      status: 'error',
+      file: "",
+      status: "error",
       message: `"${path.basename(targetFsPath)}" can't be ignored: its name contains a control character that a git ignore pattern can't represent.`,
     };
   }
@@ -166,23 +174,27 @@ export async function addEntry(
 
   const content = await readIfExists(file);
   if (lineExists(content, pattern)) {
-    return { relativePath, pattern, target, file, status: 'skipped' };
+    return { relativePath, pattern, target, file, status: "skipped" };
   }
 
   // A copy disabled from the sidebar view (`#off ` marker) is re-enabled in
   // place instead of being appended a second time.
   const reEnabled = setLineEnabled(content, pattern, true);
-  const updated = reEnabled !== content ? reEnabled : appendLine(content, pattern);
+  const updated =
+    reEnabled !== content ? reEnabled : appendLine(content, pattern);
 
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, updated, 'utf8');
-  return { relativePath, pattern, target, file, status: 'added' };
+  await fs.writeFile(file, updated, "utf8");
+  return { relativePath, pattern, target, file, status: "added" };
 }
 
 /** Absolute path of the ignore file backing `target` for this workspace. */
-export async function ignoreFilePath(workspaceRoot: string, target: Target): Promise<string> {
-  return target === 'gitignore'
-    ? path.join(workspaceRoot, '.gitignore')
+export async function ignoreFilePath(
+  workspaceRoot: string,
+  target: Target,
+): Promise<string> {
+  return target === "gitignore"
+    ? path.join(workspaceRoot, ".gitignore")
     : resolveExcludeFile(workspaceRoot);
 }
 
@@ -195,12 +207,18 @@ export interface IgnoreFileEntries {
 }
 
 /** Parse both ignore files of a workspace folder (a missing file has no entries). */
-export async function listEntries(workspaceRoot: string): Promise<IgnoreFileEntries[]> {
-  const targets: Target[] = ['gitignore', 'exclude'];
+export async function listEntries(
+  workspaceRoot: string,
+): Promise<IgnoreFileEntries[]> {
+  const targets: Target[] = ["gitignore", "exclude"];
   return Promise.all(
     targets.map(async (target) => {
       const file = await ignoreFilePath(workspaceRoot, target);
-      return { target, file, entries: parseIgnoreFile(await readIfExists(file)) };
+      return {
+        target,
+        file,
+        entries: parseIgnoreFile(await readIfExists(file)),
+      };
     }),
   );
 }
@@ -222,7 +240,7 @@ export async function setEntryEnabled(
   if (updated === content) {
     return false;
   }
-  await fs.writeFile(file, updated, 'utf8');
+  await fs.writeFile(file, updated, "utf8");
   return true;
 }
 
@@ -239,6 +257,6 @@ export async function removeEntry(
   if (updated === content) {
     return false;
   }
-  await fs.writeFile(file, updated, 'utf8');
+  await fs.writeFile(file, updated, "utf8");
   return true;
 }

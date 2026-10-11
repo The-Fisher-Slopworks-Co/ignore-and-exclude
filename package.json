@@ -156,11 +156,14 @@
     "make:icon": "node scripts/make-icon.mjs",
     "check": "node scripts/check-pattern.mjs",
     "smoke": "node scripts/smoke-test.mjs",
-    "test": "npm run compile && node scripts/check-pattern.mjs && node scripts/smoke-test.mjs"
+    "test": "npm run compile && node scripts/check-pattern.mjs && node scripts/smoke-test.mjs",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.mjs\""
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "prettier": "^3.9.10",
     "typescript": "^5.4.0"
   }
 }

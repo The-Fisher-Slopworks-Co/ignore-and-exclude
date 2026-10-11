@@ -14,3 +14,4 @@ LICENSES/**
 **/tsconfig.json
 **/*.map
 **/*.ts
+.prettierrc.json
