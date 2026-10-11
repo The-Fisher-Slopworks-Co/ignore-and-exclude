@@ -9,14 +9,22 @@ and inline remove/open actions.
 ## Commands
 
 ```bash
-npm install
+npm install         # also installs the lefthook pre-commit hook (`prepare`)
+npm run check       # the gate: typecheck + lint + format:check + knip + reuse + test
 npm run compile     # tsc -p ./  → out/   (tests run against out/, so compile first)
 npm run watch       # recompile on change
-npm test            # compile + pattern unit tests + runtime smoke tests (the gate)
-npm run check       # pure pattern/escaping unit tests (needs a prior compile)
+npm test            # compile + pattern unit tests + runtime smoke tests
+npm run test:pattern  # pure pattern/escaping unit tests (needs a prior compile)
 npm run smoke       # drive both commands against a mocked vscode + temp repo
+npm run lint        # oxlint (`.oxlintrc.json`)
+npm run format      # prettier --write; `format:check` only checks
+npm run knip        # unused files, exports and dependencies (`knip.ts`)
 npm run make:icon   # regenerate icon.png (dependency-free PNG encoder)
 ```
+
+`npm run reuse` runs `uvx reuse lint`, so the gate needs
+[uv](https://docs.astral.sh/uv/) on the machine. CI runs the same steps:
+`.github/workflows/check.yml` (all but REUSE) and `reuse.yml`.
 
 Run from source: `npm run compile`, then press **F5** in VS Code to launch an
 Extension Development Host. Package: `npx @vscode/vsce package` → `*.vsix`.
@@ -32,7 +40,7 @@ Extension Development Host. Package: `npx @vscode/vsce package` → `*.vsix`.
   - Subject: lowercase start, imperative, no trailing period.
   - The body describes this PR alone, following the PR template.
 - **No AI attribution.** No `Assisted-by:` / `Co-Authored-By: <LLM>` trailers, no agent as commit author or committer, and no "Generated with/by …" lines or agent-platform links in PR bodies. The PR body becomes the squash commit body, so the PR title workflow checks the title, the body and every commit of the PR.
-- **Before opening:** `npm test` green, then open the PR and report its URL.
+- **Before opening:** `npm run check` green, then open the PR and report its URL.
 - **Never merge locally.** Merging happens on GitHub, squash only.
 
 ## Architecture
@@ -65,4 +73,5 @@ Four source files in `src/` (compiled to `out/`):
   and YAML carry a two-line inline SPDX header; JSON/binaries/docs are covered
   by the `**` wildcard in `REUSE.toml`. Run `reuse lint` to verify.
 - **Releases:** push a `vX.Y.Z` tag; `.github/workflows/release.yml` runs the
-  test gate, packages the `.vsix`, and attaches it to a GitHub Release.
+  check gate (`check.yml`), packages the `.vsix`, and attaches it to a GitHub
+  Release. Dev tooling configs stay out of the `.vsix` through `.vscodeignore`.

@@ -154,15 +154,24 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "make:icon": "node scripts/make-icon.mjs",
-    "check": "node scripts/check-pattern.mjs",
+    "typecheck": "tsc -p ./ --noEmit",
+    "lint": "oxlint",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.mjs\" \"*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.mjs\" \"*.ts\"",
+    "knip": "knip",
+    "reuse": "uvx reuse lint",
+    "test:pattern": "node scripts/check-pattern.mjs",
     "smoke": "node scripts/smoke-test.mjs",
-    "test": "npm run compile && node scripts/check-pattern.mjs && node scripts/smoke-test.mjs",
-    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.mjs\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.mjs\""
+    "test": "npm run compile && npm run test:pattern && npm run smoke",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip && npm run reuse && npm test",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
+    "knip": "^6.41.0",
+    "lefthook": "^2.2.1",
+    "oxlint": "^1.87.0",
     "prettier": "^3.9.10",
     "typescript": "^5.4.0"
   }

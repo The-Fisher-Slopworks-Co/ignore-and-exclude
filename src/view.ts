@@ -25,7 +25,7 @@ import {
 import { DISABLED_PREFIX } from "./pattern";
 
 /** Must match the view id contributed in package.json. */
-export const VIEW_ID = "ignoreAndExclude.entries";
+const VIEW_ID = "ignoreAndExclude.entries";
 
 interface FolderNode {
   kind: "folder";

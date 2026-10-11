@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    // `Module._load` is Node's own loader hook, the only way the smoke test can
+    // hand the compiled extension a mocked `vscode` module. The name is not ours.
+    "no-underscore-dangle": ["error", { "allow": ["_load"] }]
+  },
+  "overrides": [
+    {
+      "files": ["scripts/smoke-test.mjs"],
+      "rules": {
+        // The mocks stand in for `vscode.TreeItem`, `ThemeIcon`, `Range` and
+        // `RelativePattern`, which the extension builds with `new`. They have
+        // to stay classes even when a constructor is all they need.
+        "typescript/no-extraneous-class": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["node_modules", "out"]
+}

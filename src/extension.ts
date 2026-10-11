@@ -33,15 +33,15 @@ export function deactivate(): void {
   // Nothing to clean up beyond context.subscriptions, disposed by VSCode.
 }
 
+const onDisk = (list: vscode.Uri[]): vscode.Uri[] =>
+  list.filter((u) => u && u.scheme === "file");
+
 /**
  * Work out which resource(s) the command targets. The Explorer passes
  * `(clickedUri, selectedUris)`; an editor-title click passes a single uri; the
  * Command Palette passes nothing, so we fall back to the active editor.
  */
 function collectUris(uri?: vscode.Uri, uris?: vscode.Uri[]): vscode.Uri[] {
-  const onDisk = (list: vscode.Uri[]): vscode.Uri[] =>
-    list.filter((u) => u && u.scheme === "file");
-
   if (uris && uris.length > 0) {
     return onDisk(uris);
   }

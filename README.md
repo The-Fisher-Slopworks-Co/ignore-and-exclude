@@ -79,9 +79,10 @@ npm run compile
 Other scripts:
 
 ```bash
+npm run check       # the whole gate: typecheck, lint, format, knip, REUSE, tests
 npm test            # compile + pattern unit tests + runtime smoke tests
 npm run watch       # recompile on change
-npm run check       # pure pattern/escaping unit tests (after compile)
+npm run test:pattern  # pure pattern/escaping unit tests (after compile)
 npm run smoke       # drive both commands against a mocked VS Code + temp repo
 npm run make:icon   # regenerate icon.png
 ```
