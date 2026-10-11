@@ -8,6 +8,7 @@ node_modules/**
 .gitignore
 .git/**
 CLAUDE.md
+AGENTS.md
 REUSE.toml
 LICENSES/**
 **/tsconfig.json

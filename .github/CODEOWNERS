@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 The Fisher Slopworks Co
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Everything has one owner. GitHub requests their review on every pull request
+# they did not open themselves.
+* @txssu

@@ -2,17 +2,31 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Keep the GitHub Actions used by our CI / release / REUSE workflows current.
 version: 2
+
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  # Security updates only: a limit of 0 turns off version updates, while
+  # Dependabot still opens PRs for vulnerable packages.
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: weekly
+    open-pull-requests-limit: 0
     commit-message:
-      prefix: "ci"
+      prefix: chore(deps)
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(deps)
     groups:
       actions:
-        patterns:
-          - "*"
+        update-types: [minor, patch]
